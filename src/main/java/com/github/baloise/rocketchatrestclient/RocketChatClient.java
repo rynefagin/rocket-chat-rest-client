@@ -21,17 +21,12 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class RocketChatClient {
 
-	private final String serverUrl;
-	private final String user;
-	private final String password;
-	private  String xAuthToken;
-	private  String xUserId;
+	private Configuration config;
 	private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper;
 	
 	public RocketChatClient(String serverUrl, String user, String password) {
-		this.serverUrl = serverUrl;
-		this.user = user;
-		this.password = password;
+		
+		config = new Configuration(serverUrl, user, password);
 		jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		jacksonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
@@ -51,9 +46,9 @@ public class RocketChatClient {
 	private <T> T authenticatedGet(String method, Class<T> reponseClass) throws IOException {
 		try {
 		HttpResponse<String> ret = Unirest
-				 .get(serverUrl+method)
-				.header("X-Auth-Token", xAuthToken)
-				.header("X-User-Id", xUserId)
+				 .get(config.getServerUrl()+method)
+				.header("X-Auth-Token", config.getxAuthToken())
+				.header("X-User-Id", config.getxUserId())
 				.asString();
 		if(ret.getStatus() == 401) {
 			login();
@@ -71,9 +66,9 @@ public class RocketChatClient {
 	
 	private <T> T authenticatedPost(String method, Object request, Class<T> reponseClass) throws IOException {
 		try {
-			HttpResponse<String> ret = Unirest.post(serverUrl+method)
-					.header("X-Auth-Token", xAuthToken)
-					.header("X-User-Id", xUserId)
+			HttpResponse<String> ret = Unirest.post(config.getServerUrl()+method)
+					.header("X-Auth-Token", config.getxAuthToken())
+					.header("X-User-Id", config.getxUserId())
 					.header("Content-Type", "application/json")
 					.body(jacksonObjectMapper.writeValueAsString(request))
 					.asString();
@@ -88,23 +83,23 @@ public class RocketChatClient {
 	}
 
 	void login() throws UnirestException {
-		HttpResponse<JsonNode> asJson = Unirest.post(serverUrl +"login")
-				.field("user", user)
-				.field("password", password)
+		HttpResponse<JsonNode> asJson = Unirest.post(config.getServerUrl() +"login")
+				.field("user", config.getUser())
+				.field("password", config.getPassword())
 				 .asJson();
 		if(asJson.getStatus() == 401) {
 			throw new UnirestException("401 - Unauthorized");
 		}
 		JSONObject data = asJson.getBody().getObject().getJSONObject("data");
-		xAuthToken = data.getString("authToken");
-		xUserId = data.getString("userId");
+		config.setxAuthToken(data.getString("authToken"));
+		config.setxUserId(data.getString("userId"));
 	}
 
 	public void logout() throws IOException {
 		try {
-			Unirest.post(serverUrl+"logout")
-					.header("X-Auth-Token", xAuthToken)
-					.header("X-User-Id", xUserId)
+			Unirest.post(config.getServerUrl()+"logout")
+					.header("X-Auth-Token", config.getxAuthToken())
+					.header("X-User-Id", config.getxUserId())
 					.asJson();
 		} catch (UnirestException e) {
 			throw new IOException(e);
@@ -124,7 +119,7 @@ public class RocketChatClient {
 	private JSONObject getVersions() throws IOException {
 		if (lazyVersions == null) {
 			try {
-				lazyVersions = Unirest.get(serverUrl + "version").asJson().getBody().getObject()
+				lazyVersions = Unirest.get(config.getServerUrl() + "version").asJson().getBody().getObject()
 						.getJSONObject("versions");
 			} catch (UnirestException e) {
 				throw new IOException(e);
