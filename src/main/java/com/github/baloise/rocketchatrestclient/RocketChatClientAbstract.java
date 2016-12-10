@@ -43,6 +43,15 @@ public abstract class RocketChatClientAbstract {
 		}
 	}
 	
+	protected JSONObject Put(String method, Configuration config) throws IOException {
+		try {
+			return Unirest.post(config.getServerUrl() + method).asJson().getBody().getObject();
+			
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
 	protected <T> T authenticatedGet(String method, Class<T> reponseClass, Configuration config) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
