@@ -35,7 +35,7 @@ public class RocketChatClient {
 	}
 
 	public Set<Room> getPublicRooms() throws IOException {
-		Rooms rooms = authenticatedGet("publicRooms", Rooms.class, config);
+		Rooms rooms = authenticatedGet("publicRooms", Rooms.class);
 		HashSet<Room> ret = new HashSet<>();
 		cache.roomCache.clear();
 		for (Room r : rooms.rooms) {
@@ -100,7 +100,7 @@ public class RocketChatClient {
 		if(!cache.roomCache.containsKey(channelName))
 		{
 			String method = config.getApiVersionPrefix()+API.CHANNEL_CREATE;
-			authenticatedPost(method, new Channel(channelName), null, config);
+			authenticatedPost(method, new Channel(channelName), null);
 
 		}
 		this.getPublicRooms();
@@ -115,7 +115,7 @@ public class RocketChatClient {
 	}
 
 	public void send(Room room, String message) throws IOException {
-		authenticatedPost("rooms/" + room._id + "/send", new Message(message), null, config);
+		authenticatedPost("rooms/" + room._id + "/send", new Message(message), null);
 	}
 
 	public Room getRoom(String room) throws IOException {
@@ -127,7 +127,7 @@ public class RocketChatClient {
 		return ret;
 	}
 	
-	protected <T> T authenticatedPost(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
+	protected <T> T authenticatedPost(String method, Object request, Class<T> reponseClass) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
 					.header("X-Auth-Token", config.getxAuthToken())
@@ -137,7 +137,7 @@ public class RocketChatClient {
 					.asString();
 			if (ret.getStatus() == 401) {
 				login();
-				return authenticatedPost(method, request, reponseClass, config);
+				return authenticatedPost(method, request, reponseClass);
 			}
 			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
 		} catch (UnirestException e) {
@@ -145,7 +145,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	private <T> T Post(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T Post(String method, Object request, Class<T> reponseClass) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
 					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
@@ -157,7 +157,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	private JSONObject Put(String method, Configuration config) throws IOException {
+	private JSONObject Put(String method) throws IOException {
 		try {
 			return Unirest.post(config.getServerUrl() + method).asJson().getBody().getObject();
 			
@@ -166,7 +166,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	private <T> T authenticatedGet(String method, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T authenticatedGet(String method, Class<T> reponseClass) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
 					.header("X-Auth-Token", config.getxAuthToken())
@@ -174,7 +174,7 @@ public class RocketChatClient {
 					.asString();
 			if (ret.getStatus() == 401) {
 				login();
-				return authenticatedGet(method, reponseClass, config);
+				return authenticatedGet(method, reponseClass);
 			}
 			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
 		} catch (UnirestException e) {
@@ -182,7 +182,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	private <T> T Get(String method, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T Get(String method, Class<T> reponseClass) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
 					.asString();
