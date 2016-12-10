@@ -6,6 +6,7 @@ public class Configuration {
 	private final String user;
 	private final String password;
 	private  String xAuthToken;
+	private  String xUserId;
 	
 	public Configuration(String serverUrl, String user, String password) {
 		super();
@@ -43,7 +44,7 @@ public class Configuration {
 		return password;
 	}
 
-	private  String xUserId;
+	
 	
 	
 	
