@@ -5,11 +5,13 @@ public class Configuration {
 	private final String serverUrl;
 	private final String user;
 	private final String password;
+	private final String apiVersionPrefix;
 	private  String xAuthToken;
 	private  String xUserId;
 	
-	public Configuration(String serverUrl, String user, String password) {
+	public Configuration(String serverUrl, String apiVersionPrefix, String user, String password) {
 		super();
+		this.apiVersionPrefix = apiVersionPrefix;
 		this.serverUrl = serverUrl;
 		this.user = user;
 		this.password = password;
@@ -42,6 +44,10 @@ public class Configuration {
 
 	public String getPassword() {
 		return password;
+	}
+
+	public String getApiVersionPrefix() {
+		return apiVersionPrefix;
 	}
 
 	
