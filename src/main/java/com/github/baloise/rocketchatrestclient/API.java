@@ -1,6 +1,6 @@
 package com.github.baloise.rocketchatrestclient;
 
-public class API {
+public final class API {
 
 	public static final String CHANNEL_ADD_ALL = "channels.addAll";
 	public static final String CHANNEL_ARCHIVE = "channels.archive";
