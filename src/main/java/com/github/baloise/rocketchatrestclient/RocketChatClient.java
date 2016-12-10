@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import com.github.baloise.rocketchatrestclient.model.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.baloise.rocketchatrestclient.model.Channel;
 import com.github.baloise.rocketchatrestclient.model.Message;
 import com.github.baloise.rocketchatrestclient.model.Room;
 import com.github.baloise.rocketchatrestclient.model.Rooms;
@@ -92,6 +93,21 @@ public class RocketChatClient extends RocketChatClientAbstract {
 		}
 
 	}
+	
+	public void createChannel(String channelName) throws IOException {
+		if(!cache.roomCache.containsKey(channelName))
+		{
+			this.sendChannel(channelName);
+		}
+		this.getPublicRooms();
+		
+	}
+	
+	private void sendChannel(String channelName) throws IOException {
+		String method = "v1/channels.create/";
+		super.authenticatedPost(method, new Channel(channelName), null, config);
+	}
+	
 
 	@Deprecated
 	public void send(String roomName, String message) throws IOException {
