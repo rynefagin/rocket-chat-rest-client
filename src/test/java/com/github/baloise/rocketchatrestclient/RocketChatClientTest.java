@@ -11,11 +11,11 @@ import com.github.baloise.rocketchatrestclient.model.Room;
 public class RocketChatClientTest {
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void test() throws Exception {
-		String user = "";
-		String password = "";
-		RocketChatClient rc = new RocketChatClient("https://demo.rocket.chat/api/", user, password);
+		String user = "ryne";
+		String password = "ryne1!";
+		RocketChatClient rc = new RocketChatClient("http://localhost/api/", user, password);
 
 		// get meta info
 		System.out.println("Api version is "+rc.getApiVersion());
@@ -28,7 +28,7 @@ public class RocketChatClientTest {
 		}
 
 		// send a message to a room. Room ID is resolved automatically      
-		rc.send("test", "Hello from REST client" + new Date());
+		rc.send("general", "Hello from REST client" + new Date());
 
 		// no comment ;-)
 		rc.logout();

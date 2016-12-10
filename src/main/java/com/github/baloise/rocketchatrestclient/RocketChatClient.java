@@ -3,14 +3,14 @@ package com.github.baloise.rocketchatrestclient;
 import static java.lang.String.format;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONObject;
 
+import com.github.baloise.rocketchatrestclient.model.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.baloise.rocketchatrestclient.model.Message;
 import com.github.baloise.rocketchatrestclient.model.Room;
 import com.github.baloise.rocketchatrestclient.model.Rooms;
@@ -19,62 +19,27 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-public class RocketChatClient {
+public class RocketChatClient extends RocketChatClientAbstract {
 
 	private Configuration config;
-	private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper;
-	Map<String, Room> roomCache = new HashMap<>();
+	private Cache cache;
 
 	public RocketChatClient(String serverUrl, String user, String password) {
-
+		cache = new Cache();
 		config = new Configuration(serverUrl, user, password);
-		jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+		super.jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		jacksonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	public Set<Room> getPublicRooms() throws IOException {
-		Rooms rooms = authenticatedGet("publicRooms", Rooms.class);
+		Rooms rooms = super.authenticatedGet("publicRooms", Rooms.class, config);
 		HashSet<Room> ret = new HashSet<>();
-		roomCache.clear();
+		cache.roomCache.clear();
 		for (Room r : rooms.rooms) {
 			ret.add(r);
-			roomCache.put(r.name, r);
+			cache.roomCache.put(r.name, r);
 		}
 		return ret;
-	}
-
-	private <T> T authenticatedGet(String method, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
-					.header("X-Auth-Token", config.getxAuthToken()).header("X-User-Id", config.getxUserId()).asString();
-			if (ret.getStatus() == 401) {
-				login();
-				return authenticatedGet(method, reponseClass);
-			}
-			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-
-	private void authenticatedPost(String method, Object request) throws IOException {
-		authenticatedPost(method, request, null);
-	}
-
-	private <T> T authenticatedPost(String method, Object request, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
-					.header("X-Auth-Token", config.getxAuthToken()).header("X-User-Id", config.getxUserId())
-					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
-					.asString();
-			if (ret.getStatus() == 401) {
-				login();
-				return authenticatedPost(method, request, reponseClass);
-			}
-			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
 	}
 
 	void login() throws UnirestException {
@@ -98,27 +63,37 @@ public class RocketChatClient {
 	}
 
 	public String getApiVersion() throws IOException {
-		return getVersions().getString("api");
+		if(cache.version == null)
+			getVersion();
+		
+		return cache.version.getApi();
 	}
 
 	public String getRocketChatVersion() throws IOException {
-		return getVersions().getString("rocketchat");
+		if(cache.version == null)
+			getVersion();
+		
+		return cache.version.getRocketchat();
 	}
 
-	JSONObject lazyVersions;
+	private void getVersion() throws IOException {
 
-	private JSONObject getVersions() throws IOException {
-		if (lazyVersions == null) {
+		if (cache.version == null) {
 			try {
-				lazyVersions = Unirest.get(config.getServerUrl() + "version").asJson().getBody().getObject()
-						.getJSONObject("versions");
-			} catch (UnirestException e) {
+				JSONObject versionJSON = super.Get("version", config).getJSONObject("versions");
+				Version version = new Version();
+				version.setApi(versionJSON.getString("api"));
+				version.setRocketchat(versionJSON.getString("rocketchat"));
+				cache.version = version;
+
+			} catch (IOException e) {
 				throw new IOException(e);
 			}
 		}
-		return lazyVersions;
+
 	}
 
+	@Deprecated
 	public void send(String roomName, String message) throws IOException {
 		Room room = getRoom(roomName);
 		if (room == null)
@@ -126,15 +101,17 @@ public class RocketChatClient {
 		send(room, message);
 	}
 
+	@Deprecated
 	public void send(Room room, String message) throws IOException {
-		authenticatedPost("rooms/" + room._id + "/send", new Message(message));
+		super.authenticatedPost("rooms/" + room._id + "/send", new Message(message), null, config);
 	}
 
+	@Deprecated
 	public Room getRoom(String room) throws IOException {
-		Room ret = roomCache.get(room);
+		Room ret = cache.roomCache.get(room);
 		if (ret == null) {
 			getPublicRooms();
-			ret = roomCache.get(room);
+			ret = cache.roomCache.get(room);
 		}
 		return ret;
 	}
