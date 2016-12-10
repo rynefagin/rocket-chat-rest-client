@@ -27,9 +27,9 @@ public class RocketChatClient {
 	private ObjectMapper jacksonObjectMapper;
 	
 
-	public RocketChatClient(String serverUrl, String user, String password) {
+	public RocketChatClient(String serverUrl, String apiVersionPrefix, String user, String password) {
 		cache = new Cache();
-		config = new Configuration(serverUrl, user, password);
+		config = new Configuration(serverUrl, apiVersionPrefix, user, password);
 		jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		jacksonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
@@ -99,19 +99,14 @@ public class RocketChatClient {
 	public void createChannel(String channelName) throws IOException {
 		if(!cache.roomCache.containsKey(channelName))
 		{
-			this.sendChannel(channelName);
+			String method = config.getApiVersionPrefix()+API.CHANNEL_CREATE;
+			authenticatedPost(method, new Channel(channelName), null, config);
+
 		}
 		this.getPublicRooms();
 		
 	}
-	
-	private void sendChannel(String channelName) throws IOException {
-		String method = "v1/channels.create/";
-		authenticatedPost(method, new Channel(channelName), null, config);
-	}
-	
 
-	@Deprecated
 	public void send(String roomName, String message) throws IOException {
 		Room room = getRoom(roomName);
 		if (room == null)
@@ -119,12 +114,10 @@ public class RocketChatClient {
 		send(room, message);
 	}
 
-	@Deprecated
 	public void send(Room room, String message) throws IOException {
 		authenticatedPost("rooms/" + room._id + "/send", new Message(message), null, config);
 	}
 
-	@Deprecated
 	public Room getRoom(String room) throws IOException {
 		Room ret = cache.roomCache.get(room);
 		if (ret == null) {
@@ -137,8 +130,10 @@ public class RocketChatClient {
 	protected <T> T authenticatedPost(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
-					.header("X-Auth-Token", config.getxAuthToken()).header("X-User-Id", config.getxUserId())
-					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
+					.header("X-Auth-Token", config.getxAuthToken())
+					.header("X-User-Id", config.getxUserId())
+					.header("Content-Type", "application/json")
+					.body(jacksonObjectMapper.writeValueAsString(request))
 					.asString();
 			if (ret.getStatus() == 401) {
 				login();
@@ -150,7 +145,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	protected <T> T Post(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T Post(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
 					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
@@ -162,7 +157,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	protected JSONObject Put(String method, Configuration config) throws IOException {
+	private JSONObject Put(String method, Configuration config) throws IOException {
 		try {
 			return Unirest.post(config.getServerUrl() + method).asJson().getBody().getObject();
 			
@@ -171,7 +166,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	protected <T> T authenticatedGet(String method, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T authenticatedGet(String method, Class<T> reponseClass, Configuration config) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
 					.header("X-Auth-Token", config.getxAuthToken())
@@ -187,7 +182,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	protected <T> T Get(String method, Class<T> reponseClass, Configuration config) throws IOException {
+	private <T> T Get(String method, Class<T> reponseClass, Configuration config) throws IOException {
 		try {
 			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
 					.asString();
@@ -198,7 +193,7 @@ public class RocketChatClient {
 		}
 	}
 	
-	protected JSONObject Get(String method, Configuration config) throws IOException {
+	private JSONObject Get(String method, Configuration config) throws IOException {
 		try {
 			return Unirest.get(config.getServerUrl() + method).asJson().getBody().getObject();
 			
