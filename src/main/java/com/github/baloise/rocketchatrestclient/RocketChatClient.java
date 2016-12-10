@@ -20,20 +20,22 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-public class RocketChatClient extends RocketChatClientAbstract {
+public class RocketChatClient {
 
 	private Configuration config;
 	private Cache cache;
+	private ObjectMapper jacksonObjectMapper;
+	
 
 	public RocketChatClient(String serverUrl, String user, String password) {
 		cache = new Cache();
 		config = new Configuration(serverUrl, user, password);
-		super.jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+		jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		jacksonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	public Set<Room> getPublicRooms() throws IOException {
-		Rooms rooms = super.authenticatedGet("publicRooms", Rooms.class, config);
+		Rooms rooms = authenticatedGet("publicRooms", Rooms.class, config);
 		HashSet<Room> ret = new HashSet<>();
 		cache.roomCache.clear();
 		for (Room r : rooms.rooms) {
@@ -81,7 +83,7 @@ public class RocketChatClient extends RocketChatClientAbstract {
 
 		if (cache.version == null) {
 			try {
-				JSONObject versionJSON = super.Get("version", config).getJSONObject("versions");
+				JSONObject versionJSON = Get("version", config).getJSONObject("versions");
 				Version version = new Version();
 				version.setApi(versionJSON.getString("api"));
 				version.setRocketchat(versionJSON.getString("rocketchat"));
@@ -105,7 +107,7 @@ public class RocketChatClient extends RocketChatClientAbstract {
 	
 	private void sendChannel(String channelName) throws IOException {
 		String method = "v1/channels.create/";
-		super.authenticatedPost(method, new Channel(channelName), null, config);
+		authenticatedPost(method, new Channel(channelName), null, config);
 	}
 	
 
@@ -119,7 +121,7 @@ public class RocketChatClient extends RocketChatClientAbstract {
 
 	@Deprecated
 	public void send(Room room, String message) throws IOException {
-		super.authenticatedPost("rooms/" + room._id + "/send", new Message(message), null, config);
+		authenticatedPost("rooms/" + room._id + "/send", new Message(message), null, config);
 	}
 
 	@Deprecated
@@ -130,6 +132,79 @@ public class RocketChatClient extends RocketChatClientAbstract {
 			ret = cache.roomCache.get(room);
 		}
 		return ret;
+	}
+	
+	protected <T> T authenticatedPost(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
+		try {
+			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
+					.header("X-Auth-Token", config.getxAuthToken()).header("X-User-Id", config.getxUserId())
+					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
+					.asString();
+			if (ret.getStatus() == 401) {
+				login();
+				return authenticatedPost(method, request, reponseClass, config);
+			}
+			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
+	protected <T> T Post(String method, Object request, Class<T> reponseClass, Configuration config) throws IOException {
+		try {
+			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
+					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
+					.asString();
+			
+			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
+	protected JSONObject Put(String method, Configuration config) throws IOException {
+		try {
+			return Unirest.post(config.getServerUrl() + method).asJson().getBody().getObject();
+			
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
+	protected <T> T authenticatedGet(String method, Class<T> reponseClass, Configuration config) throws IOException {
+		try {
+			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
+					.header("X-Auth-Token", config.getxAuthToken())
+					.header("X-User-Id", config.getxUserId())
+					.asString();
+			if (ret.getStatus() == 401) {
+				login();
+				return authenticatedGet(method, reponseClass, config);
+			}
+			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
+	protected <T> T Get(String method, Class<T> reponseClass, Configuration config) throws IOException {
+		try {
+			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
+					.asString();
+			
+			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
+	}
+	
+	protected JSONObject Get(String method, Configuration config) throws IOException {
+		try {
+			return Unirest.get(config.getServerUrl() + method).asJson().getBody().getObject();
+			
+		} catch (UnirestException e) {
+			throw new IOException(e);
+		}
 	}
 
 }
