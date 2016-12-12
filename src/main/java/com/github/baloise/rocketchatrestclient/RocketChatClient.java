@@ -1,205 +1,167 @@
 package com.github.baloise.rocketchatrestclient;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.json.JSONObject;
-
-import com.github.baloise.rocketchatrestclient.model.Version;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.baloise.rocketchatrestclient.model.Channel;
-import com.github.baloise.rocketchatrestclient.model.Message;
 import com.github.baloise.rocketchatrestclient.model.Room;
-import com.github.baloise.rocketchatrestclient.model.Rooms;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import com.github.baloise.rocketchatrestclient.model.ServerInfo;
+import com.github.baloise.rocketchatrestclient.model.User;
 
+/**
+ * Client for Rocket.Chat which relies on the REST API v1.
+ * <p>
+ * Please note, this client does <strong>not</strong> cache any of the results.
+ *
+ * @version 0.1.0
+ * @since 0.0.1
+ */
 public class RocketChatClient {
+    private RocketChatClientCallBuilder callBuilder;
 
-	private Configuration config;
-	private Cache cache;
-	private ObjectMapper jacksonObjectMapper;
-	
+    /**
+     * Initialize a new instance of the client providing the server's url along with username and
+     * password to use.
+     *
+     * @param serverUrl of the Rocket.Chat server, with or without it ending in "/api/"
+     * @param user which to authenticate with
+     * @param password of the user to authenticate with
+     */
+    public RocketChatClient(String serverUrl, String user, String password) {
+        this.callBuilder = new RocketChatClientCallBuilder(serverUrl, user, password);
+    }
 
-	public RocketChatClient(String serverUrl, String apiVersionPrefix, String user, String password) {
-		cache = new Cache();
-		config = new Configuration(serverUrl, apiVersionPrefix, user, password);
-		jacksonObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-		jacksonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
+    /**
+     * Forces a logout and clears the auth token if no exception happened.
+     *
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public void logout() throws IOException {
+        this.callBuilder.logout();
+    }
+    
+    /**
+     * Gets the {@link ServerInfo} from the server, containing the version.
+     * 
+     * @return the {@link ServerInfo}
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public ServerInfo getServerInformation() throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.Info);
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call out to get the server information was unsuccessful.");
+        
+        if (!res.hasServerInfo())
+            throw new IOException("The server information was not retrieved from the server.");
+        
+        return res.getServerInfo();
+    }
 
-	public Set<Room> getPublicRooms() throws IOException {
-		Rooms rooms = authenticatedGet("publicRooms", Rooms.class);
-		HashSet<Room> ret = new HashSet<>();
-		cache.roomCache.clear();
-		for (Room r : rooms.rooms) {
-			ret.add(r);
-			cache.roomCache.put(r.name, r);
-		}
-		return ret;
-	}
+    /**
+     * Gets <strong>all</strong> of the users from a Rocket.Chat server, if you have a ton this will
+     * take some time.
+     *
+     * @return an array of {@link User}s
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public User[] getUsers() throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.UsersList);
 
-	void login() throws UnirestException {
-		HttpResponse<JsonNode> asJson = Unirest.post(config.getServerUrl() + "login").field("user", config.getUser())
-				.field("password", config.getPassword()).asJson();
-		if (asJson.getStatus() == 401) {
-			throw new UnirestException("401 - Unauthorized");
-		}
-		JSONObject data = asJson.getBody().getObject().getJSONObject("data");
-		config.setxAuthToken(data.getString("authToken"));
-		config.setxUserId(data.getString("userId"));
-	}
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the Users was unsuccessful.");
 
-	public void logout() throws IOException {
-		try {
-			Unirest.post(config.getServerUrl() + "logout").header("X-Auth-Token", config.getxAuthToken())
-					.header("X-User-Id", config.getxUserId()).asJson();
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
+        if (!res.hasUsers())
+            throw new IOException("Get User Information failed to retrieve the users.");
 
-	public String getApiVersion() throws IOException {
-		if(cache.version == null)
-			getVersion();
+        return res.getUsers();
+    }
+
+    /**
+     * Retrieves a {@link User} from the Rocket.Chat server.
+     *
+     * @param userId of the user to retrieve
+     * @return an instance of the {@link User}
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful or there is no user
+     */
+    public User getUser(String userId) throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.UsersInfo, new RocketChatQueryParams("userId", userId));
+
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the User's Information was unsuccessful.");
+
+        if (!res.hasUser())
+            throw new IOException("Get User Information failed to retrieve a user.");
+
+        return res.getUser();
+    }
+
+    /**
+     * Gets <strong>all</strong> of the public channels from a Rocket.Chat server, if you have a ton
+     * this will take some time.
+     *
+     * @return an array of {@link Room}s that are channels
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public Room[] getChannels() throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsList);
+
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the Public Channels was unsuccessful.");
+
+        if (!res.hasChannels())
+            throw new IOException("Get Channels failed to retrieve the channels.");
+
+        return res.getChannels();
+    }
+    
+    /**
+     * Retrieves information from the server about the channel.
+     * 
+     * @param channelId the "_id" of the channel to get
+     * @return the {@link Room} which is the channel
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public Room getChannel(String channelId) throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsInfo, new RocketChatQueryParams("roomId", channelId));
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the Channel's Information was unsuccessful.");
+        
+        if (!res.hasChannel())
+            throw new IOException("The response does not contain any channel information.");
+        
+        return res.getChannel();
+    }
+    
+	/**
+	 * Creates a new channel with only the creator added
+	 * 
+	 * @param channelName
+	 *            the of the channel to create
+	 * @return the {@link Room} which is the newly created channel
+	 * @throws IOException
+	 *             is thrown if there was a problem connecting, including if the
+	 *             result wasn't successful
+	 */
+	public Room createChannel(String channelName) throws IOException {
+
+		Room room = new Room();
+		room.setName(channelName);
 		
-		return cache.version.getApi();
-	}
+		RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsCreate, null, room);
 
-	public String getRocketChatVersion() throws IOException {
-		if(cache.version == null)
-			getVersion();
-		
-		return cache.version.getRocketchat();
-	}
+		if (!res.isSuccessful())
+			throw new IOException("The call to create a Channel was unsuccessful.");
 
-	private void getVersion() throws IOException {
+		if (!res.hasChannel())
+			throw new IOException("The response does not contain any channel information.");
 
-		if (cache.version == null) {
-			try {
-				JSONObject versionJSON = Get("version", config).getJSONObject("versions");
-				Version version = new Version();
-				version.setApi(versionJSON.getString("api"));
-				version.setRocketchat(versionJSON.getString("rocketchat"));
-				cache.version = version;
-
-			} catch (IOException e) {
-				throw new IOException(e);
-			}
-		}
-
+		return res.getChannel();
 	}
 	
-	public void createChannel(String channelName) throws IOException {
-		if(!cache.roomCache.containsKey(channelName))
-		{
-			String method = config.getApiVersionPrefix()+API.CHANNEL_CREATE;
-			authenticatedPost(method, new Channel(channelName), null);
-
-		}
-		this.getPublicRooms();
-		
-	}
-
-	public void send(String roomName, String message) throws IOException {
-		Room room = getRoom(roomName);
-		if (room == null)
-			throw new IOException(format("unknown room : %s", roomName));
-		send(room, message);
-	}
-
-	public void send(Room room, String message) throws IOException {
-		authenticatedPost("rooms/" + room._id + "/send", new Message(message), null);
-	}
-
-	public Room getRoom(String room) throws IOException {
-		Room ret = cache.roomCache.get(room);
-		if (ret == null) {
-			getPublicRooms();
-			ret = cache.roomCache.get(room);
-		}
-		return ret;
-	}
-	
-	protected <T> T authenticatedPost(String method, Object request, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
-					.header("X-Auth-Token", config.getxAuthToken())
-					.header("X-User-Id", config.getxUserId())
-					.header("Content-Type", "application/json")
-					.body(jacksonObjectMapper.writeValueAsString(request))
-					.asString();
-			if (ret.getStatus() == 401) {
-				login();
-				return authenticatedPost(method, request, reponseClass);
-			}
-			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-	
-	private <T> T Post(String method, Object request, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.post(config.getServerUrl() + method)
-					.header("Content-Type", "application/json").body(jacksonObjectMapper.writeValueAsString(request))
-					.asString();
-			
-			return reponseClass == null ? null : jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-	
-	private JSONObject Put(String method) throws IOException {
-		try {
-			return Unirest.post(config.getServerUrl() + method).asJson().getBody().getObject();
-			
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-	
-	private <T> T authenticatedGet(String method, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
-					.header("X-Auth-Token", config.getxAuthToken())
-					.header("X-User-Id", config.getxUserId())
-					.asString();
-			if (ret.getStatus() == 401) {
-				login();
-				return authenticatedGet(method, reponseClass);
-			}
-			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-	
-	private <T> T Get(String method, Class<T> reponseClass) throws IOException {
-		try {
-			HttpResponse<String> ret = Unirest.get(config.getServerUrl() + method)
-					.asString();
-			
-			return jacksonObjectMapper.readValue(ret.getBody(), reponseClass);
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-	
-	private JSONObject Get(String method, Configuration config) throws IOException {
-		try {
-			return Unirest.get(config.getServerUrl() + method).asJson().getBody().getObject();
-			
-		} catch (UnirestException e) {
-			throw new IOException(e);
-		}
-	}
-
 }

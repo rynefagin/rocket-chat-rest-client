@@ -1,43 +1,26 @@
 package com.github.baloise.rocketchatrestclient;
 
-import java.util.Date;
-import java.util.Set;
-
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
-import com.github.baloise.rocketchatrestclient.model.Room;
+import com.github.baloise.rocketchatrestclient.model.ServerInfo;
+import com.github.baloise.rocketchatrestclient.model.User;
 
 public class RocketChatClientTest {
 
 	@Test
 	@Ignore
-	public void test() throws Exception {
+	public void testRocketCatExists() throws Exception {
+	    String serverUrl = "https://demo.rocket.chat/api/";
 		String user = "";
 		String password = "";
-		String apiVersion = "/v1/";
+		RocketChatClient rc = new RocketChatClient(serverUrl, user, password);
 		
-		RocketChatClient rc = new RocketChatClient("http://localhost/api/", apiVersion ,user, password);
-
-		// get meta info
-		System.out.println("Api version is "+rc.getApiVersion());
-		System.out.println("Rocket.Chat version is "+rc.getRocketChatVersion());
-
+		ServerInfo info = rc.getServerInformation();
+		assertTrue("The Rocket.Chat Version is empty, when it shouldn't be.", !info.getVersion().isEmpty());
 		
-		// use typed API to retrieve rooms      
-		Set<Room> rooms = rc.getPublicRooms();
-		for (Room room : rooms) {
-		    System.out.println(String.format("name: %s, id: %s", room.name, room._id));
-		}
-		
-		//create a new channel
-		rc.createChannel("test");
-
-		// send a message to a room. Room ID is resolved automatically      
-		rc.send("test", "Hello from REST client" + new Date());
-
-		// no comment ;-)
-		rc.logout();
+		User rocketCat = rc.getUser("rocket.cat");
+		assertTrue("The Rocket.Cat user's id doesn't match what it should be.", "rocket.cat".equals(rocketCat.getId()));
 	}
-
 }
