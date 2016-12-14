@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.baloise</groupId>
 	<artifactId>rocket-chat-rest-client</artifactId>
-	<version>0.1.1-SNAPSHOT</version>
+	<version>0.1.2-SNAPSHOT</version>
 	<properties>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
@@ -49,9 +49,9 @@
 						<configuration>
 							<images>
 								<image>
-									<name>rocketchat</name>
+									<name>rocketchat/it</name>
 									<build>
-										<dockerFileDir>${project.basedir}/docker/rocketchat</dockerFileDir>
+										<dockerFileDir>rocketchat</dockerFileDir>
 									</build>
 									<run>
 										<links>
