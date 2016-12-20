@@ -251,25 +251,6 @@ public class RocketChatClient {
     }
     
     /**
-     * Cleans up a channel, removing messages from the provided time range.
-     * 
-     * @param channelId 	the "_id" of the room to clean the history of
-     * @param latest 		{@link java.util.Date} end date of time range of messages to clean
-     * @param oldest 		{@link java.util.Date} start date of time range of messages to clean
-     * @param inclusive 	{@link java.lang.Boolean} whether messages which land on latest and oldest should be included
-     * @throws IOException 	is thrown if there was a problem connecting, including if the result
-     *             wasn't successful
-     */
-    public void closeChannel(String channelId, Date latest, Date oldest, boolean inclusive) throws IOException {
-        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsClose, 
-        		new RocketChatQueryParams("roomId", channelId));
-        
-        if (!res.isSuccessful())
-            throw new IOException("The call to close the Channel was unsuccessful.");
-        
-    }
-    
-    /**
      * Retrieves the information about the channel.
      * 
      * @param channelId 	the "_id" of the room to get information
