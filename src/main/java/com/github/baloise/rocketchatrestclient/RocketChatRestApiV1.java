@@ -32,6 +32,12 @@ public enum RocketChatRestApiV1 {
     GroupsInfo("groups.info", HttpMethods.GET, true),
     /** Retrieves a list of all the <strong>private</strong> groups the auth'd user has joined. */
     GroupsList("groups.list", HttpMethods.GET, true),
+    /** Creates a new <strong>private</strong> group. */
+    GroupsCreate("groups.create", HttpMethods.POST, true),
+    /** Archives a group. */
+    GroupsArchive("groups.archive", HttpMethods.POST, true),
+    /** Closes a group. */
+    GroupsClose("groups.close", HttpMethods.POST, true),
     /** Retrieves a list of all the direct message rooms the auth'd user has. */
     ImsList("ims.list", HttpMethods.GET, true),
     /** Gets the information about the server, including version and build commit. */

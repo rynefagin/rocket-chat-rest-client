@@ -248,7 +248,7 @@ public class RocketChatClient {
     public void closeChannel(String channelId) throws IOException {
     	Map<String, Object> bodyMap = new HashMap<String,Object>();
     	bodyMap.put("roomId", channelId);
-        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsClose, null, (new HashMap<String,Object>()).put("roomId", channelId) );
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsClose, null, bodyMap );
         
         if (!res.isSuccessful())
             throw new IOException("The call to close the Channel was unsuccessful.");
@@ -277,5 +277,85 @@ public class RocketChatClient {
         
     }
     
-	
+    /**
+	 * Creates a new private group with only the creator added
+	 * 
+	 * @param groupName
+	 *            the of the group to create
+	 * @return the {@link Room} which is the newly created channel
+	 * @throws IOException
+	 *             is thrown if there was a problem connecting, including if the
+	 *             result wasn't successful
+	 */
+	public Room createGroup(String groupName) throws IOException {
+
+		Room room = new Room();
+		room.setName(groupName);
+		
+		RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsCreate, null, room);
+
+		if (!res.isSuccessful())
+			throw new IOException("The call to create a Group was unsuccessful.");
+
+		if (!res.hasGroup())
+			throw new IOException("The response does not contain any group information.");
+
+		return res.getGroup();
+	} 
+    
+    /**
+     * Archives a group
+     * 
+     * @param groupId 	the "_id" of the room to archive
+     * @throws IOException 	is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public void archiveGroup(String groupId) throws IOException {
+    	Map<String,Object> qp = new HashMap<String,Object>();
+    	qp.put("roomId", groupId);
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsArchive, null, qp);
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call to archive the Group was unsuccessful.");
+        
+    }
+    
+    /**
+     * Closes a group
+     * 
+     * @param groupId the "_id" of the room to close
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public void closeGroup(String groupId) throws IOException {
+    	Map<String, Object> bodyMap = new HashMap<String,Object>();
+    	bodyMap.put("roomId", groupId);
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsClose, null, bodyMap);
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call to close the Channel was unsuccessful.");
+        
+    }
+    
+    /**
+     * Retrieves the information about the group.
+     * 
+     * @param groupId 	the "_id" of the room to get information
+     * @throws IOException 	is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     * @returns The {$link Room} of the channel
+     */
+    public Room getGroupInfo(String groupId) throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsInfo, 
+        		new RocketChatQueryParams("roomId", groupId));
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the Group's information failed.");
+        
+        if (!res.hasGroup())
+            throw new IOException("The call to get the Group's information failed.");
+        
+        return res.getGroup();
+        
+    }
 }
