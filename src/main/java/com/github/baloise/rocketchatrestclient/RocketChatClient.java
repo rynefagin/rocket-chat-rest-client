@@ -278,6 +278,26 @@ public class RocketChatClient {
     }
     
     /**
+  	 * Invites a user to a channel
+  	 * 
+     * @param groupId 	the "_id" of the room to get information
+  	 * @param userId	the "_id" of the user to invite
+  	 * @throws IOException
+  	 *             is thrown if there was a problem connecting, including if the
+  	 *             result wasn't successful
+  	 */
+  	public void inviteUserToChannel(String groupId, String userId) throws IOException {
+  		Map<String, Object> bodyMap = new HashMap<String,Object>();
+    	bodyMap.put("roomId", groupId);
+    	bodyMap.put("userId", userId);
+  		
+  		RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsInvite, null, bodyMap);
+
+  		if (!res.isSuccessful())
+  			throw new IOException("The call to invite a User to an Channel was unsuccessful.");
+  	}
+    
+    /**
 	 * Creates a new private group with only the creator added
 	 * 
 	 * @param groupName
@@ -358,4 +378,24 @@ public class RocketChatClient {
         return res.getGroup();
         
     }
+
+    /**
+  	 * Invites a user to a private group 
+  	 * 
+     * @param groupId 	the "_id" of the room to get information
+  	 * @param userId	the "_id" of the user to invite
+  	 * @throws IOException
+  	 *             is thrown if there was a problem connecting, including if the
+  	 *             result wasn't successful
+  	 */
+  	public void inviteUserToGroup(String groupId, String userId) throws IOException {
+  		Map<String, Object> bodyMap = new HashMap<String,Object>();
+    	bodyMap.put("roomId", groupId);
+    	bodyMap.put("userId", userId);
+  		
+  		RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsInvite, null, bodyMap);
+
+  		if (!res.isSuccessful())
+  			throw new IOException("The call to invite a User to an Group was unsuccessful.");
+  	} 
 }
