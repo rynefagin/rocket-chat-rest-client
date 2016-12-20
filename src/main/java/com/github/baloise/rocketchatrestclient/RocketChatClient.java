@@ -217,21 +217,26 @@ public class RocketChatClient {
      * @throws IOException 	is thrown if there was a problem connecting, including if the result
      *             wasn't successful
      */
-    public void cleanHistoryOfChannel(String channelId, Date latest, Date oldest, boolean inclusive) throws IOException {
+    public void cleanHistoryOfChannel(String channelId, Date latest, Date oldest, Boolean inclusive) throws IOException {
         
-    	RocketChatQueryParams rcqp = new RocketChatQueryParams();
-    	rcqp.add("roomId", channelId);
-    	rcqp.add("latest", df.format(latest));
-    	rcqp.add("oldest", df.format(oldest));
-    	rcqp.add("inclusive", df.format(inclusive));
+    	Map<String,Object> rcqp = new HashMap<String,Object>();
+    	rcqp.put("roomId", channelId);
     	
-    	RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsCleanHistory, rcqp);
+    	if(latest!=null && oldest!=null && inclusive!=null)
+    	{
+    		rcqp.put("latest", df.format(latest));
+    		rcqp.put("oldest", df.format(oldest));
+    		rcqp.put("inclusive", inclusive);
+    	}else{
+    		throw new IOException("latest, oldest and inclusive must not be null");
+    	}
+    	
+    	RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsCleanHistory, null, rcqp);
         
         if (!res.isSuccessful())
             throw new IOException("The call to clean the Channel was unsuccessful.");
         
     }
-    
     
     /**
      * Closes a channel

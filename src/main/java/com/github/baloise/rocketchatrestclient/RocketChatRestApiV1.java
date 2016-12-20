@@ -23,7 +23,7 @@ public enum RocketChatRestApiV1 {
     /** Closes a channel. */
     ChannelsClose("channels.close", HttpMethods.POST, true),
     /** Cleans up a channel (removing messages) */
-    ChannelsCleanHistory("channels.cleanHistory", HttpMethods.GET, true),
+    ChannelsCleanHistory("channels.cleanHistory", HttpMethods.POST, true),
     /** Deletes a chat message. */
     ChatDelete("chat.delete", HttpMethods.POST, true),
     /** Sends a new chat message */
