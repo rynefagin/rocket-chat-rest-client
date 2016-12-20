@@ -296,6 +296,26 @@ public class RocketChatClient {
   		if (!res.isSuccessful())
   			throw new IOException("The call to invite a User to an Channel was unsuccessful.");
   	}
+  	
+  	 /**
+     * Gets <strong>all</strong> of the private groups the calling user has access to from a Rocket.Chat server, if you have a ton
+     * this will take some time.
+     *
+     * @return an array of {@link Room}s that are groups
+     * @throws IOException is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     */
+    public Room[] getGroups() throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.GroupsList);
+
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the private Groups was unsuccessful.");
+
+        if (!res.hasGroups())
+            throw new IOException("Get Groups failed to retrieve the groups.");
+
+        return res.getGroups();
+    }
     
     /**
 	 * Creates a new private group with only the creator added
