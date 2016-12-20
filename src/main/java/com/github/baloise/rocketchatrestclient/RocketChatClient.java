@@ -269,5 +269,27 @@ public class RocketChatClient {
         
     }
     
+    /**
+     * Retrieves the information about the channel.
+     * 
+     * @param channelId 	the "_id" of the room to get information
+     * @throws IOException 	is thrown if there was a problem connecting, including if the result
+     *             wasn't successful
+     * @returns The {$link Room} of the channel
+     */
+    public Room getChannelInfo(String channelId) throws IOException {
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsInfo, 
+        		new RocketChatQueryParams("roomId", channelId));
+        
+        if (!res.isSuccessful())
+            throw new IOException("The call to get the Channel's information failed.");
+        
+        if (!res.hasChannel())
+            throw new IOException("The call to get the Channel's information failed.");
+        
+        return res.getChannel();
+        
+    }
+    
 	
 }
