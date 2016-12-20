@@ -46,7 +46,27 @@ public class RocketChatClientTestIT {
 		for(Room room1: rooms ){
 			if(room1.getName().equals(this.roomNameTest))
 			{
-				rc.closeChannel(room1);
+				rc.archiveChannel(room.getId());
+				isCalled = true;
+				break;
+			}
+		}
+		
+		assertTrue("Error, channel did not exist for closing",isCalled);
+	}
+	
+	@Test
+	@Ignore
+	public void testCreateAndArchiveChannel() throws Exception{
+		Room room = rc.createChannel(roomNameTest);
+		assertTrue( "Room Id shouldn't be null if the room was created", (room.getId() !=null && !room.getId().isEmpty()));
+	
+		boolean isCalled = false;
+		Room[] rooms = rc.getChannels();
+		for(Room room1: rooms ){
+			if(room1.getName().equals(this.roomNameTest))
+			{
+				rc.archiveChannel(room.getId());
 				isCalled = true;
 				break;
 			}

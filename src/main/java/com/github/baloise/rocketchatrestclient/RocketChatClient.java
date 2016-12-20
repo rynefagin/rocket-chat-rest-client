@@ -198,7 +198,9 @@ public class RocketChatClient {
      *             wasn't successful
      */
     public void archiveChannel(String channelId) throws IOException {
-        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsArchive, new RocketChatQueryParams("roomId", channelId));
+    	Map<String,Object> qp = new HashMap<String,Object>();
+    	qp.put("roomId", channelId);
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsArchive, null, qp);
         
         if (!res.isSuccessful())
             throw new IOException("The call to archive the Channel was unsuccessful.");
@@ -238,10 +240,10 @@ public class RocketChatClient {
      * @throws IOException is thrown if there was a problem connecting, including if the result
      *             wasn't successful
      */
-    public void closeChannel(Room room) throws IOException {
+    public void closeChannel(String channelId) throws IOException {
     	Map<String, Object> bodyMap = new HashMap<String,Object>();
-    	bodyMap.put("roomId", room.getId());
-        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsClose, null, (new HashMap<String,Object>()).put("roomId", room.getId()) );
+    	bodyMap.put("roomId", channelId);
+        RocketChatClientResponse res = this.callBuilder.buildCall(RocketChatRestApiV1.ChannelsClose, null, (new HashMap<String,Object>()).put("roomId", channelId) );
         
         if (!res.isSuccessful())
             throw new IOException("The call to close the Channel was unsuccessful.");
